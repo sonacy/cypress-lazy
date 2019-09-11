@@ -1,10 +1,10 @@
 import { IEvent } from 'src/content'
 
-const wrapDescribeHeader = `describe('test_name', function() {\n`
+const wrapDescribeHeader = `describe('cypress lazy', function() {\n`
 
 const wrapDescribeFooter = `})`
 
-const wrapItHeader = ` it('what_it_does', function() {\n`
+const wrapItHeader = ` it('lazy operation', function() {\n`
 
 const wrapItFooter = ` })\n`
 

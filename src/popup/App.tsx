@@ -1,5 +1,6 @@
 import { Button, Card } from 'antd'
 import React, { useEffect, useState } from 'react'
+import CopyToClipboard from 'react-copy-to-clipboard'
 import { generate } from 'src/code-generator/CodeGenerator'
 
 let chromePort: chrome.runtime.Port | null = null
@@ -9,6 +10,8 @@ const App = () => {
   const [isPaused, setIsPaused] = useState(false)
   const [code, setCode] = useState('')
   const [recording, setRecording] = useState([])
+  const [showResult, setShowResult] = useState(false)
+  const [isCopying, setIsCopying] = useState(false)
 
   useEffect(() => {
     chromePort = chrome.runtime.connect()
@@ -21,6 +24,14 @@ const App = () => {
       }
     })
   }, [])
+
+  useEffect(() => {
+    if (!isRecording && code) {
+      setShowResult(true)
+    } else {
+      setShowResult(false)
+    }
+  }, [code, isRecording])
 
   useEffect(() => {
     storeState()
@@ -66,7 +77,6 @@ const App = () => {
       if (recording) {
         setRecording(recording)
         const newCode = generate(recording)
-        alert(newCode)
         setCode(newCode)
 
         chrome.storage.local.set({ 'firstRun': 0 })
@@ -87,6 +97,34 @@ const App = () => {
     setRecording([])
   }
 
+  const getActions = () => {
+    return showResult
+      ? [
+          <Button key="restart" onClick={restart} type="primary">
+            Restart
+          </Button>,
+          !isCopying ? (
+            <CopyToClipboard text={code} onCopy={() => setIsCopying(true)}>
+              <Button type="ghost">copy to clipboard</Button>
+            </CopyToClipboard>
+          ) : (
+            <span>copy success!</span>
+          ),
+        ]
+      : [
+          <Button
+            key="record"
+            onClick={toggleRecord}
+            type={isRecording ? 'danger' : 'primary'}
+          >
+            {isRecording ? 'Stop' : 'Record'}
+          </Button>,
+          <Button key="resume" onClick={togglePause} type="ghost">
+            {isPaused ? 'Resume' : 'Pause'}
+          </Button>,
+        ]
+  }
+
   const loadState = (cb: () => void) => {
     chrome.storage.local.get(['controls', 'code'], ({ controls, code }) => {
       console.log('loaded controls', controls)
@@ -98,6 +136,7 @@ const App = () => {
       if (code) {
         setCode(code)
       }
+      setIsCopying(false)
       cb()
     })
   }
@@ -118,29 +157,18 @@ const App = () => {
       size="default"
       style={{
         width: 400,
-        height: 300,
+        height: 400,
       }}
+      actions={getActions()}
     >
-      <pre>{code}</pre>
-      <div
+      <pre
         style={{
-          height: 80,
-          display: 'flex',
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          alignItems: 'center',
+          height: 250,
+          overflow: 'scroll',
         }}
       >
-        <Button
-          onClick={toggleRecord}
-          type={isRecording ? 'danger' : 'primary'}
-        >
-          {isRecording ? 'Stop' : 'Record'}
-        </Button>
-        <Button onClick={togglePause} type="ghost">
-          {isPaused ? 'Resume' : 'Pause'}
-        </Button>
-      </div>
+        {code}
+      </pre>
     </Card>
   )
 }
